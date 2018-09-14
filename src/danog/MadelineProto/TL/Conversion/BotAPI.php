@@ -328,7 +328,6 @@ trait BotAPI
         }
     }
 
-
     public function botAPI_to_MTProto($arguments)
     {
         foreach (self::BOTAPI_PARAMS_CONVERSION as $bot => $mtproto) {

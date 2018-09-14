@@ -124,7 +124,7 @@ trait ResponseHandler
                     // Acknowledge that I received the server's response
                     if (isset($this->datacenter->sockets[$datacenter]->incoming_messages[$this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['orig_message']['msg_id']])) {
                         $this->ack_incoming_message_id($this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['orig_message']['msg_id'], $datacenter);
-                        // Acknowledge that I received the server's response
+                    // Acknowledge that I received the server's response
                     } else {
                         $this->check_message_id($message['orig_message']['msg_id'], ['outgoing' => false, 'datacenter' => $datacenter, 'container' => true]);
                         $this->datacenter->sockets[$datacenter]->incoming_messages[$message['orig_message']['msg_id']] = ['content' => $this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['orig_message']];
@@ -159,7 +159,7 @@ trait ResponseHandler
                     unset($this->datacenter->sockets[$datacenter]->new_incoming[$current_msg_id]);
                     foreach ($this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['msg_ids'] as $key => $msg_id) {
                         $msg_id = new \phpseclib\Math\BigInteger(strrev($msg_id), 256);
-                        $status = 'Status for message id ' . $msg_id . ': ';
+                        $status = 'Status for message id '.$msg_id.': ';
                         if (($this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['info'][$key] & 4) !== 0) {
                             $this->ack_outgoing_message_id($msg_id, $datacenter);
                         }
@@ -240,11 +240,11 @@ trait ResponseHandler
                             break;
                         default:
                             $only_updates = false;
-                            $this->logger->logger('Trying to assign a response of type ' . $response_type . ' to its request...', \danog\MadelineProto\Logger::VERBOSE);
+                            $this->logger->logger('Trying to assign a response of type '.$response_type.' to its request...', \danog\MadelineProto\Logger::VERBOSE);
                             foreach ($this->datacenter->sockets[$datacenter]->new_outgoing as $key => $expecting_msg_id) {
                                 $expecting = $this->datacenter->sockets[$datacenter]->outgoing_messages[$expecting_msg_id];
 
-                                $this->logger->logger('Does the request of return type ' . $expecting['type'] . ' match?', \danog\MadelineProto\Logger::VERBOSE);
+                                $this->logger->logger('Does the request of return type '.$expecting['type'].' match?', \danog\MadelineProto\Logger::VERBOSE);
                                 if ($response_type === $expecting['type']) {
                                     $this->logger->logger('Yes', \danog\MadelineProto\Logger::VERBOSE);
                                     unset($this->datacenter->sockets[$datacenter]->new_incoming[$current_msg_id]);
@@ -254,7 +254,7 @@ trait ResponseHandler
                                 $this->logger->logger('No', \danog\MadelineProto\Logger::VERBOSE);
                             }
 
-                            throw new \danog\MadelineProto\ResponseException('Dunno how to handle ' . PHP_EOL . var_export($this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content'], true));
+                            throw new \danog\MadelineProto\ResponseException('Dunno how to handle '.PHP_EOL.var_export($this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content'], true));
                             break;
                     }
                     break;
@@ -275,6 +275,7 @@ trait ResponseHandler
                 if (in_array($response['error_message'], ['PERSISTENT_TIMESTAMP_EMPTY', 'PERSISTENT_TIMESTAMP_OUTDATED', 'PERSISTENT_TIMESTAMP_INVALID'])) {
                     $this->ack_outgoing_message_id($request_id, $datacenter);
                     $request['promise']->reject(new \danog\MadelineProto\PTSException($response['error_message']));
+
                     return;
                 }
                 switch ($response['error_code']) {
@@ -284,17 +285,19 @@ trait ResponseHandler
                         }
 
                         $this->method_recall($request_id, $datacenter);
+
                         return;
                     case 303:
                         $old_datacenter = $datacenter;
                         $this->datacenter->curdc = $datacenter = (int) preg_replace('/[^0-9]+/', '', $response['error_message']);
 
-                        if ($request['file'] && isset($this->datacenter->sockets[$datacenter . '_media'])) {
+                        if ($request['file'] && isset($this->datacenter->sockets[$datacenter.'_media'])) {
                             \danog\MadelineProto\Logger::log('Using media DC');
                             $datacenter .= '_media';
                         }
 
                         $this->method_recall($request_id, $datacenter, $old_datacenter);
+
                         return;
                     case 401:
                         switch ($response['error_message']) {
@@ -314,6 +317,7 @@ trait ResponseHandler
                                 $this->init_authorization();
 
                                 $request['promise']->reject(new \danog\MadelineProto\RPCErrorException($response['error_message'], $response['error_code']));
+
                                 return;
                             case 'AUTH_KEY_UNREGISTERED':
                             case 'AUTH_KEY_INVALID':
@@ -321,6 +325,7 @@ trait ResponseHandler
                                     $this->ack_outgoing_message_id($request_id, $datacenter);
 
                                     $request['promise']->reject(new \danog\MadelineProto\RPCErrorException($response['error_message'], $response['error_code']));
+
                                     return;
                                 }
                                 $this->logger->logger('Auth key not registered, resetting temporary and permanent auth keys...', \danog\MadelineProto\Logger::ERROR);
@@ -342,11 +347,13 @@ trait ResponseHandler
                                     $this->init_authorization();
 
                                     $request['promise']->reject(new \danog\MadelineProto\RPCErrorException($response['error_message'], $response['error_code']));
+
                                     return;
                                 }
                                 $this->init_authorization();
 
                                 $this->method_recall($request_id, $datacenter);
+
                                 return;
                             case 'AUTH_KEY_PERM_EMPTY':
                                 $this->logger->logger('Temporary auth key not bound, resetting temporary auth key...', \danog\MadelineProto\Logger::ERROR);
@@ -355,19 +362,22 @@ trait ResponseHandler
                                 $this->init_authorization();
 
                                 $this->method_recall($request_id, $datacenter);
+
                                 return;
                         }
                         $this->ack_outgoing_message_id($request_id, $datacenter);
 
                         $request['promise']->reject(new \danog\MadelineProto\RPCErrorException($response['error_message'], $response['error_code']));
+
                         return;
                     case 420:
                         $seconds = preg_replace('/[^0-9]+/', '', $response['error_message']);
                         $limit = isset($aargs['FloodWaitLimit']) ? $aargs['FloodWaitLimit'] : $this->settings['flood_timeout']['wait_if_lt'];
                         if (is_numeric($seconds) && $seconds < $limit) {
-                            $this->logger->logger('Flood, waiting ' . $seconds . ' seconds before repeating async call...', \danog\MadelineProto\Logger::NOTICE);
+                            $this->logger->logger('Flood, waiting '.$seconds.' seconds before repeating async call...', \danog\MadelineProto\Logger::NOTICE);
                             sleep($seconds);
                             $this->method_recall($request_id, $datacenter);
+
                             return;
                         }
                         // no break
@@ -375,8 +385,10 @@ trait ResponseHandler
                         $this->ack_outgoing_message_id($request_id, $datacenter);
 
                         $request['promise']->reject(new \danog\MadelineProto\RPCErrorException($response['error_message'], $response['error_code']));
+
                         return;
                 }
+
                 return;
             case 'boolTrue':
             case 'boolFalse':
@@ -386,25 +398,28 @@ trait ResponseHandler
             case 'bad_msg_notification':
                 switch ($this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['error_code']) {
                     case 48:
-                        $this->logger->logger('Received bad_msg_notification: ' . self::BAD_MSG_ERROR_CODES[$this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['error_code']], \danog\MadelineProto\Logger::WARNING);
+                        $this->logger->logger('Received bad_msg_notification: '.self::BAD_MSG_ERROR_CODES[$this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['error_code']], \danog\MadelineProto\Logger::WARNING);
                         $this->datacenter->sockets[$datacenter]->temp_auth_key['server_salt'] = $this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['new_server_salt'];
                         $this->method_recall($request_id, $datacenter);
+
                         return;
                     case 16:
                     case 17:
-                        $this->logger->logger('Received bad_msg_notification: ' . self::BAD_MSG_ERROR_CODES[$this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['error_code']], \danog\MadelineProto\Logger::WARNING);
+                        $this->logger->logger('Received bad_msg_notification: '.self::BAD_MSG_ERROR_CODES[$this->datacenter->sockets[$datacenter]->incoming_messages[$current_msg_id]['content']['error_code']], \danog\MadelineProto\Logger::WARNING);
                         $this->datacenter->sockets[$datacenter]->time_delta = (int) (new \phpseclib\Math\BigInteger(strrev($current_msg_id), 256))->bitwise_rightShift(32)->subtract(new \phpseclib\Math\BigInteger(time()))->toString();
-                        $this->logger->logger('Set time delta to ' . $this->datacenter->sockets[$datacenter]->time_delta, \danog\MadelineProto\Logger::WARNING);
+                        $this->logger->logger('Set time delta to '.$this->datacenter->sockets[$datacenter]->time_delta, \danog\MadelineProto\Logger::WARNING);
                         $this->reset_session();
                         $this->datacenter->sockets[$datacenter]->temp_auth_key = null;
                         $this->init_authorization();
 
                         $this->method_recall($request_id, $datacenter);
+
                         return;
                 }
                 $this->ack_outgoing_message_id($request_id, $datacenter);
 
                 $request['promise']->reject(new \danog\MadelineProto\RPCErrorException('Received bad_msg_notification: '.self::BAD_MSG_ERROR_CODES[$server_answer['error_code']], $server_answer['error_code']));
+
                 return;
         }
         unset($request);
@@ -496,7 +511,7 @@ trait ResponseHandler
                     $this->get_updates_difference();
                     break;
                 default:
-                    throw new \danog\MadelineProto\ResponseException('Unrecognized update received: ' . var_export($updates, true));
+                    throw new \danog\MadelineProto\ResponseException('Unrecognized update received: '.var_export($updates, true));
                     break;
             }
         } finally {

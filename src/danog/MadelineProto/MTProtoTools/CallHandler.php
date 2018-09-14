@@ -73,7 +73,6 @@ trait CallHandler
             $this->get_updates_difference();
         } else {
             foreach ($this->datacenter->sockets as $datacenter => $socket) {
-
                 $this->send_messages($datacenter);
                 if (($error = $this->recv_message($datacenter)) !== true) {
                     var_dump($error);
@@ -82,17 +81,17 @@ trait CallHandler
                             $this->logger->logger('WARNING: Resetting auth key...', \danog\MadelineProto\Logger::WARNING);
                             $this->datacenter->sockets[$datacenter]->temp_auth_key = null;
                             $this->init_authorization();
-    
+
                             throw new \danog\MadelineProto\Exception('I had to recreate the temporary authorization key');
                         }
                         $this->check_pending_calls_dc($datacenter);
+
                         return;
                     }
-    
+
                     throw new \danog\MadelineProto\RPCErrorException($error, $error);
                 }
-    
-                }
+            }
             $this->last_getdifference = time();
         }
     }
@@ -104,14 +103,15 @@ trait CallHandler
         }
     }
 
-    public function check_pending_calls_dc($datacenter) {
+    public function check_pending_calls_dc($datacenter)
+    {
         $zis = $this;
         if (!empty($this->datacenter->sockets[$datacenter]->new_outgoing)) {
             $promise = new \GuzzleHttp\Promise\Promise();
             $promise->then(
                 function ($result) use ($datacenter, $zis) {
                     $zis->logger->logger($result, \danog\MadelineProto\Logger::NOTICE);
-                }, 
+                },
                 function ($error) use ($datacenter, $zis) {
                     $zis->logger->logger($error, \danog\MadelineProto\Logger::FATAL_ERROR);
                 }
@@ -136,7 +136,7 @@ trait CallHandler
             $this->append_message($this->datacenter->sockets[$old_datacenter][$message_id], ['datacenter' => $new_datacenter]);
             $this->ack_outgoing_message_id($message_id, $datacenter);
         }
-        
+
         $this->send_messages($new_datacenter);
     }
 
@@ -156,6 +156,7 @@ trait CallHandler
             }
         );
         var_dump($out);
+
         return $out;
     }
 
@@ -168,14 +169,14 @@ trait CallHandler
             $this->logger->logger("Didn't serialize in a while, doing that now...");
             $this->wrapper->serialize($this->wrapper->session);
         }
-        if (isset($aargs['file']) && $aargs['file'] && isset($this->datacenter->sockets[$aargs['datacenter'] . '_media'])) {
+        if (isset($aargs['file']) && $aargs['file'] && isset($this->datacenter->sockets[$aargs['datacenter'].'_media'])) {
             \danog\MadelineProto\Logger::log('Using media DC');
             $aargs['datacenter'] .= '_media';
         }
         if (in_array($method, ['messages.setEncryptedTyping', 'messages.readEncryptedHistory', 'messages.sendEncrypted', 'messages.sendEncryptedFile', 'messages.sendEncryptedService', 'messages.receivedQueue'])) {
             $aargs['queue'] = 'secret';
         }
-        
+
         if (isset($args['message']) && is_string($args['message']) && $this->mb_strlen($args['message']) > $this->config['message_length_max']) {
             $arg_chunks = $this->split_to_chunks($args);
             $args = array_shift($arg_chunks);
@@ -216,7 +217,7 @@ trait CallHandler
             }
 
             try {
-                $this->logger->logger('Calling method (try number ' . $count . ' for ' . $method . ')...', \danog\MadelineProto\Logger::ULTRA_VERBOSE);
+                $this->logger->logger('Calling method (try number '.$count.' for '.$method.')...', \danog\MadelineProto\Logger::ULTRA_VERBOSE);
 
                 if (isset($queue)) {
                 }
@@ -240,7 +241,7 @@ trait CallHandler
                 while ($server_answer === null && $res_count++ < $response_tries) {
                     // Loop until we get a response, loop for a max of $this->settings['max_tries']['response'] times
                     try {
-                        $this->logger->logger('Getting response (try number ' . $res_count . ' for ' . $method . ')...', \danog\MadelineProto\Logger::ULTRA_VERBOSE);
+                        $this->logger->logger('Getting response (try number '.$res_count.' for '.$method.')...', \danog\MadelineProto\Logger::ULTRA_VERBOSE);
                         if (!isset($this->datacenter->sockets[$aargs['datacenter']]->outgoing_messages[$message_id]['response']) || !isset($this->datacenter->sockets[$aargs['datacenter']]->incoming_messages[$this->datacenter->sockets[$aargs['datacenter']]->outgoing_messages[$message_id]['response']]['content'])) {
                             // Checks if I have received the response to the called method, if not continue looping
                             if ($only_updates) {
@@ -272,16 +273,16 @@ trait CallHandler
                         $only_updates = $this->handle_messages($aargs['datacenter']);
                         // This method receives data from the socket, and parses stuff
                     } catch (\danog\MadelineProto\Exception $e) {
-                        $last_error = $e->getMessage() . ' in ' . basename($e->getFile(), '.php') . ' on line ' . $e->getLine();
+                        $last_error = $e->getMessage().' in '.basename($e->getFile(), '.php').' on line '.$e->getLine();
                         if (in_array($e->getMessage(), ['Resend query', 'I had to recreate the temporary authorization key', 'Got bad message notification']) || $e->getCode() === 404) {
                             continue 2;
                         }
-                        $this->logger->logger('An error getting response of method ' . $method . ': ' . $e->getMessage() . ' in ' . basename($e->getFile(), '.php') . ' on line ' . $e->getLine() . '. Retrying...', \danog\MadelineProto\Logger::WARNING);
-                        $this->logger->logger('Full trace ' . $e, \danog\MadelineProto\Logger::WARNING);
+                        $this->logger->logger('An error getting response of method '.$method.': '.$e->getMessage().' in '.basename($e->getFile(), '.php').' on line '.$e->getLine().'. Retrying...', \danog\MadelineProto\Logger::WARNING);
+                        $this->logger->logger('Full trace '.$e, \danog\MadelineProto\Logger::WARNING);
                         continue;
                     } catch (\danog\MadelineProto\NothingInTheSocketException $e) {
                         $last_error = 'Nothing in the socket';
-                        $this->logger->logger('An error getting response of method ' . $method . ': ' . $e->getMessage() . ' in ' . basename($e->getFile(), '.php') . ' on line ' . $e->getLine() . '. Retrying...', \danog\MadelineProto\Logger::WARNING);
+                        $this->logger->logger('An error getting response of method '.$method.': '.$e->getMessage().' in '.basename($e->getFile(), '.php').' on line '.$e->getLine().'. Retrying...', \danog\MadelineProto\Logger::WARNING);
                         $only_updates = false;
                         if ($last_recv === $this->datacenter->sockets[$aargs['datacenter']]->last_recv) { // the socket is dead, resend request
                             $this->close_and_reopen($aargs['datacenter']);
@@ -317,7 +318,7 @@ trait CallHandler
                     $server_answer = $this->MTProto_to_botAPI($server_answer, $args);
                 }
             } catch (\danog\MadelineProto\Exception $e) {
-                $last_error = $e->getMessage() . ' in ' . basename($e->getFile(), '.php') . ' on line ' . $e->getLine();
+                $last_error = $e->getMessage().' in '.basename($e->getFile(), '.php').' on line '.$e->getLine();
                 if (strpos($e->getMessage(), 'Received request to switch to DC ') === 0) {
                     if (($method === 'users.getUsers' && $args = ['id' => [['_' => 'inputUserSelf']]]) || $method === 'auth.exportAuthorization' || $method === 'updates.getDifference') {
                         $this->settings['connection_settings']['default_dc'] = $this->authorized_dc = $this->datacenter->curdc;
@@ -332,8 +333,8 @@ trait CallHandler
                 }
                 continue;
             } catch (\RuntimeException $e) {
-                $last_error = $e->getMessage() . ' in ' . basename($e->getFile(), '.php') . ' on line ' . $e->getLine();
-                $this->logger->logger('An error occurred while calling method ' . $method . ': ' . $last_error . '. Recreating connection and retrying to call method...', \danog\MadelineProto\Logger::WARNING);
+                $last_error = $e->getMessage().' in '.basename($e->getFile(), '.php').' on line '.$e->getLine();
+                $this->logger->logger('An error occurred while calling method '.$method.': '.$last_error.'. Recreating connection and retrying to call method...', \danog\MadelineProto\Logger::WARNING);
                 $this->close_and_reopen($aargs['datacenter']);
                 continue;
             } finally {
@@ -367,9 +368,9 @@ trait CallHandler
                     return $this->method_call($method, $args, $aargs);
                 }
 
-                throw new \danog\MadelineProto\Exception('An error occurred while calling method ' . $method . ' (' . $last_error . ').');
+                throw new \danog\MadelineProto\Exception('An error occurred while calling method '.$method.' ('.$last_error.').');
             }
-            $this->logger->logger('Got response for method ' . $method . ' @ try ' . $count . ' (response try ' . $res_count . ')', \danog\MadelineProto\Logger::ULTRA_VERBOSE);
+            $this->logger->logger('Got response for method '.$method.' @ try '.$count.' (response try '.$res_count.')', \danog\MadelineProto\Logger::ULTRA_VERBOSE);
             if ($this->datacenter->sockets[$aargs['datacenter']]->temp_auth_key !== null && (!isset($this->datacenter->sockets[$aargs['datacenter']]->temp_auth_key['connection_inited']) || $this->datacenter->sockets[$aargs['datacenter']]->temp_auth_key['connection_inited'] === false)) {
                 $this->datacenter->sockets[$aargs['datacenter']]->temp_auth_key['connection_inited'] = true;
             }
@@ -387,8 +388,7 @@ trait CallHandler
             throw new \danog\MadelineProto\RPCErrorException('RPC_CALL_FAIL');
         }
 
-        throw new \danog\MadelineProto\Exception('An error occurred while calling method ' . $method . ' (' . $last_error . ').');
-
+        throw new \danog\MadelineProto\Exception('An error occurred while calling method '.$method.' ('.$last_error.').');
     }
 
     public function object_call($object, $args = [], $aargs = ['msg_id' => null, 'heavy' => false])

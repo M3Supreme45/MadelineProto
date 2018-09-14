@@ -554,7 +554,7 @@ class MTProto
             // Getdifference manual polling interval
             'callback' => 'get_updates_update_handler',
             // Update callback
-            'run_callback' => true
+            'run_callback' => true,
         ], 'secret_chats' => ['accept_chats' => true], 'serialization' => ['serialization_interval' => 30], 'threading' => [
             'allow_threading' => false,
             // Should I use threading, if it is enabled?
